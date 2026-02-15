@@ -1201,7 +1201,7 @@ function renderAdminPage(env, request) {
                 btn.classList.add('text-slate-400');
                 
                 // 匹配当前存储的主题模式（system/light/dark）
-                if (btn.id === `btn-${theme}`) {
+                if (btn.id === 'btn-' + theme) {
                     btn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
                     btn.classList.remove('text-slate-400');
                 }
