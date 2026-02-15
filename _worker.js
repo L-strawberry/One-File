@@ -185,6 +185,11 @@ function renderAdminPage(env, request) {
     <title>One File | 管理后台</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%236366f1%22/><stop offset=%22100%22 style=%22stop-color:%233730a3%22/></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22url(%23g)%22/><circle cx=%2235%22 cy=%2235%22 r=%228%22 fill=%22%23fff%22 opacity=%220.9%22/><circle cx=%2265%22 cy=%2250%22 r=%228%22 fill=%22%23fff%22/><circle cx=%2235%22 cy=%2265%22 r=%228%22 fill=%22%23fff%22 opacity=%220.9%22/><path d=%22M35 35 L65 50 L35 65%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22 opacity=%220.5%22 fill=%22none%22/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
        
@@ -798,7 +803,7 @@ function renderAdminPage(env, request) {
                 const stat = stats[item.url] || { count: 0, lastAccess: null };
                 const timeStr = stat.lastAccess ? new Date(stat.lastAccess).toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'numeric', minute:'numeric'}) : '-';
                 
-                // 渲染 URL 掩码预览
+                // 渲染 URL 掩码预览 - 使用单引号避免嵌套冲突
                 const renderUrlPreview = (url) => {
                     if (!url) return '<span class="text-slate-300 italic">未配置 URL</span>';
                     try {
@@ -1180,20 +1185,23 @@ function renderAdminPage(env, request) {
 
         function updateThemeUI() {
             const theme = localStorage.getItem('theme') || 'system';
-            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            // 如果是 system 则看系统，否则看手动设置
+            const isDark = theme === 'dark' || (theme === 'system' && systemIsDark);
             
             // 1. 切换全局深色模式类
             document.documentElement.classList.toggle('dark', isDark);
-
-            // 2. 更新按钮高亮样式
+        
+            // 2. 更新三个按钮的高亮状态
             const buttons = document.querySelectorAll('.theme-btn');
             buttons.forEach(btn => {
-                // 重置所有按钮样式
+                // 先重置所有按钮为未选中状态
                 btn.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
                 btn.classList.add('text-slate-400');
                 
-                // 激活当前选中的按钮
-                if (btn.id === \`btn-\${theme}\`) {
+                // 匹配当前存储的主题模式（system/light/dark）
+                if (btn.id === `btn-${theme}`) {
                     btn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
                     btn.classList.remove('text-slate-400');
                 }
