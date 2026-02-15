@@ -25,9 +25,8 @@ export default {
         // 解析 Gist ID 和文件名
         const urlObj = new URL(gistUrl);
         const pathParts = urlObj.pathname.split('/');
-        // 假设 URL 格式为: /用户名/GistID/raw/文件名
         const gistId = pathParts[2];
-        const fileName = pathParts.pop();
+        const fileName = pathParts.filter(p => p).pop();
     
         const ghRes = await fetch(`https://api.github.com/gists/${gistId}`, {
           method: 'PATCH',
@@ -95,7 +94,8 @@ export default {
           const text = await res.text();
           return new Response(text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
         } catch (e) {
-          return new Response('Fetch Error: ' + e.message, { status: 500 });
+            const isTimeout = e.name === 'AbortError' || e.message.includes('timeout');
+            return new Response(isTimeout ? '请求超时 (6s)，请重试' : 'Fetch Error: ' + e.message, { status: 500 });
         }
       }
     }
@@ -139,7 +139,8 @@ export default {
         if (!/\.(yaml|yml|conf|ini|txt|json)$/i.test(fileName)) fileName += '.yaml';
         
         const encodedFileName = encodeURIComponent(fileName);
-        responseHeaders.set('Content-Disposition', `attachment; filename="${encodedFileName}"; filename*=utf-8''${encodedFileName}`);
+        responseHeaders.set('Content-Disposition', `attachment; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=utf-8''${encodedFileName}`);
+
 
         responseHeaders.set('Vary', 'User-Agent');
         responseHeaders.set('Access-Control-Allow-Origin', '*');
@@ -1207,6 +1208,16 @@ function renderAdminPage(env, request) {
                 }
             });
         }
+        // 页面加载时立即执行一次，确保初始状态正确
+        updateThemeUI();
+        
+        // 监听系统主题变化
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            // 只有当用户选择的是 "跟随系统" (system) 时，才触发自动切换
+            if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
+                updateThemeUI();
+            }
+        });
 
         function copyText(text) {
             const temp = document.createElement('textarea');
