@@ -382,10 +382,11 @@ function renderAdminPage(env, request) {
         .accordion-item.active .chevron { transform: rotate(180deg); }
 
         .scrollable-table-container {
-            max-height: 185px; 
+            max-height: 200px; /* 规则列表高度，完全展开不滚动可设置为max-height: none */
             overflow-y: auto;
             scrollbar-width: thin;
         }
+
         .scrollable-table-container::-webkit-scrollbar { width: 6px; }
         .scrollable-table-container::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 10px; }
         
