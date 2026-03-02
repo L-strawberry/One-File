@@ -799,11 +799,33 @@ function renderAdminPage(env, request) {
             }
         }
         
-        function toggleRule(index) {
+        async function toggleRule(index) {
+            // 1. 切换本地状态
             configs[index].enabled = (configs[index].enabled === false) ? true : false;
+            
+            // 2. 立即渲染界面，给用户视觉反馈
             renderTable();
-            checkChanges();
-            showToast(configs[index].enabled ? '✅ 规则已启用' : '🚫 规则已禁用');
+                       
+            // 3. 立即发起请求保存到 KV
+            try {
+                const res = await fetch('/api/config', { 
+                    method: 'POST', 
+                    headers: { 
+                        'x-admin-token': sessionStorage.getItem('gist_proxy_token'), 
+                        'Content-Type': 'application/json' 
+                    }, 
+                    body: JSON.stringify(configs) 
+                });
+                
+                if (res.ok) {
+                    originalConfigsJson = JSON.stringify(configs); // 更新原始记录，隐藏保存栏
+                    markModified(); 
+                } else {
+                    showToast('保存到 KV 失败，请重试');
+                }
+            } catch (e) {
+                showToast('网络错误，同步失败');
+            }
         }
 
         function renderTable() {
