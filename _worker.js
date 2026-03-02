@@ -106,6 +106,9 @@ export default {
     let matchedItem = null;
 
     for (const item of configs) {
+      // 如果规则被显式设置为 false，则跳过匹配
+      if (item.enabled === false) continue; 
+  
       if (!item.ua || !item.url) continue;
       const keywords = item.ua.split(',').map(k => k.trim().toLowerCase()).filter(k => k !== "");
       if (keywords.some(k => lowerUA.includes(k))) {
@@ -795,6 +798,13 @@ function renderAdminPage(env, request) {
                 return url; // 解析失败则返回原样
             }
         }
+        
+        function toggleRule(index) {
+            configs[index].enabled = (configs[index].enabled === false) ? true : false;
+            renderTable();
+            checkChanges();
+            showToast(configs[index].enabled ? '✅ 规则已启用' : '🚫 规则已禁用');
+        }
 
         function renderTable() {
             const container = document.getElementById('configList');
@@ -822,7 +832,7 @@ function renderAdminPage(env, request) {
                 };
 
                 return \`
-                    <tr id="rule-row-\${index}" class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all duration-500 border-b border-slate-50 dark:border-slate-800/50">
+                    <tr id="rule-row-\${index}" class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all duration-500 border-b border-slate-50 dark:border-slate-800/50 \${item.enabled === false ? 'opacity-50 grayscale-[0.5]' : ''}">
                         <td class="px-4 py-4 text-center text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing" style="touch-action: none;">
                             <i class="ri-draggable drag-handle text-lg"></i>
                         </td>                    
@@ -857,6 +867,10 @@ function renderAdminPage(env, request) {
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-center gap-1">
+                                <button onclick="toggleRule(\${index})" 
+                                        title="\${item.enabled === false ? '启用规则' : '禁用规则'}" 
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg \${item.enabled === false ? 'text-slate-400' : 'text-emerald-500'} hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                                    <i class="\${item.enabled === false ? 'ri-toggle-line' : 'ri-toggle-fill'} text-xl"></i></button>                                                 
                                 <button onclick="previewUrl(\${index})" title="文件预览" class="w-8 h-8 flex items-center justify-center rounded-lg text-purple-500 hover:bg-purple-50 transition-all"><i class="ri-eye-line text-lg"></i></button>
                                 <button onclick="deleteRow(\${index})" title="删除" class="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-all"><i class="ri-delete-bin-line"></i></button>
                             </div>
