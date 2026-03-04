@@ -608,7 +608,7 @@ function renderAdminPage(env, request) {
                 <div class="flex gap-2">
                    <button onclick="saveConfigs()" id="saveBtn" class="bg-indigo-800 hover:bg-indigo-700 text-white px-10 py-3 rounded-2xl text-xs font-black shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2">
                         <i class="ri-save-3-line"></i>
-                        <span>保存配置</span>
+                        <span>同步配置</span>
                    </button>
                 </div>
             </div>
@@ -635,23 +635,16 @@ function renderAdminPage(env, request) {
             </div>
     
             <div class="px-6 py-3 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100/50 dark:border-slate-800/50 flex flex-wrap gap-3 items-center">
-                <div class="flex items-center bg-white dark:bg-slate-800 rounded-lg px-3 py-1 border border-slate-200/50 dark:border-slate-700/50 flex-1 min-w-[250px] transition-all focus-within:ring-2 focus-within:ring-indigo-500/50">
+                <div class="flex items-center bg-white dark:bg-slate-800 rounded-lg px-3 py-1 border border-slate-200/50 dark:border-slate-700/50 flex-1 min-w-[250px]">
                     <i class="ri-search-line text-slate-400 mr-2 text-xs"></i>
-                    <input type="text" id="findInput" placeholder="查找内容..." class="bg-transparent border-none outline-none text-xs flex-1 py-1 dark:text-white">
+                    <input type="text" id="findInput" placeholder="查找内容 (回车搜索)..." 
+                        class="bg-transparent border-none outline-none text-xs flex-1 py-1">
                     
-                    <span id="findStatus" class="text-[10px] text-slate-400 font-mono px-2 border-l border-slate-200 dark:border-slate-700 ml-2">0/0</span>
-                    
-                    <div class="flex items-center ml-1 border-l border-slate-200 dark:border-slate-700 pl-1">
-                        <button type="button" 
-                                onmousedown="event.preventDefault()" 
-                                onclick="navigateMatch(-1)" 
-                                class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors">
+                    <div class="flex items-center gap-1 border-l border-slate-100 dark:border-slate-700 ml-2 pl-2">
+                        <button onclick="navigateMatch(-1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-all">
                             <i class="ri-arrow-up-s-line"></i>
                         </button>
-                        <button type="button" 
-                                onmousedown="event.preventDefault()" 
-                                onclick="navigateMatch(1)" 
-                                class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors">
+                        <button onclick="navigateMatch(1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-all">
                             <i class="ri-arrow-down-s-line"></i>
                         </button>
                     </div>
@@ -947,46 +940,81 @@ function renderAdminPage(env, request) {
             if(res.ok) {
                 originalConfigsJson = JSON.stringify(configs);
                 markModified(); 
-                showToast('配置已同步至 KV 数据库');
+                showToast('✅ 配置已同步至 KV 数据库');
             }
         }        
      
-        // 初始化查找功能
+        // 优化后的查找初始化逻辑
         function initSearch() {
             const input = document.getElementById('findInput');
             const textarea = document.getElementById('previewContent');
-        
-            input.addEventListener('input', () => {
-                const searchTerm = input.value;
+            const status = document.getElementById('findStatus');
+            let debounceTimer = null;
+
+            // 核心执行搜索的函数
+            const executeSearch = (isAuto = false) => {
+                const searchTerm = input.value.trim();
                 const text = textarea.value;
                 matches = [];
                 currentMatchIndex = -1;
-        
+
                 if (searchTerm && searchTerm.length > 0) {
-                    const pattern = '[.*+?^' + '$' + '{' + '}()|[\\]\\\\]';
-                    const safeSearch = searchTerm.replace(new RegExp(pattern, 'g'), '\\\\$&');
-                    
+                    const safeSearch = searchTerm.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
                     try {
                         const regex = new RegExp(safeSearch, 'gi');
                         let match;
                         while ((match = regex.exec(text)) !== null) {
-                            matches.push({
-                                start: match.index,
-                                end: match.index + searchTerm.length
-                            });
+                            matches.push({ index: match.index, length: searchTerm.length });
+                        }
+                        
+                        if (matches.length > 0) {
+                            currentMatchIndex = 0;
+                            // 如果是自动触发（防抖），不建议立即强制滚动，或者仅在输入长度 > 2 时滚动
+                            // 如果是回车触发，则立即跳转
+                            if (!isAuto || searchTerm.length > 2) {
+                                highlightMatch(currentMatchIndex);
+                            }
                         }
                     } catch (e) {
-                        console.error("Regex error:", e);
+                        console.error("搜索正则错误", e);
                     }
                 }
-                
-                updateFindUI();
-                if (matches.length > 0) {
-                    currentMatchIndex = 0;
-                    highlightAndScroll();
-                    updateFindUI();
+                status.innerText = matches.length > 0 ? '1/' + matches.length : '0/0';
+            };
+
+            // 优化 1: 增加回车键直接触发 (手机端键盘点击“搜索”或“前往”触发)
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    executeSearch(false); // 强制执行并跳转
                 }
             });
+
+            // 优化 2: 增加防抖处理 (延迟 2000ms 触发，避免键入即跳)
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    executeSearch(true); // 自动执行
+                }, 2000); 
+            });
+        }
+
+        // 辅助函数：执行跳转和高亮
+        function highlightMatch(index) {
+            const textarea = document.getElementById('previewContent');
+            if (matches[index]) {
+                const { index: start, length } = matches[index];
+                textarea.focus();
+                textarea.setSelectionRange(start, start + length);
+                
+                // 计算滚动位置，避免移动端遮挡
+                const lineHeight = 20; 
+                const lines = textarea.value.substring(0, start).split('\n').length;
+                textarea.scrollTop = (lines - 5) * lineHeight; // 预留 5 行高度
+                
+                const status = document.getElementById('findStatus');
+                status.innerText = (index + 1) + '/' + matches.length;
+            }
         }
         
         // 更新计数显示
@@ -996,7 +1024,6 @@ function renderAdminPage(env, request) {
                 status.innerText = '0/0';
                 return;
             }
-            // 使用字符串拼接避免 Cloudflare 变量解析错误
             status.innerText = (currentMatchIndex + 1) + ' / ' + matches.length;
         }
         
