@@ -1405,7 +1405,7 @@ function renderAdminPage(env, request) {
             const container = document.getElementById('qrcode');
             container.innerHTML = "";
             
-            // 强制设置背景为白色并添加内边距，确保 App 能识别边框
+            // 设置背景为白色并添加内边距，确保 App 能识别边框
             container.style.padding = "16px"; 
             container.style.background = "#ffffff";
             container.style.borderRadius = "12px"; // 可选，让边框圆润一点
