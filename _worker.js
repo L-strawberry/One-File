@@ -1405,29 +1405,25 @@ function renderAdminPage(env, request) {
             const container = document.getElementById('qrcode');
             container.innerHTML = "";
             
-            if (!url) return;
+            // 强制设置背景为白色并添加内边距，确保 App 能识别边框
+            container.style.padding = "16px"; 
+            container.style.background = "#ffffff";
+            container.style.borderRadius = "12px"; // 可选，让边框圆润一点
 
-            // 调整配置以增强 App 兼容性
-            new QRCode(container, {
-                text: url,
-                width: 200,        // 稍微加大一点
-                height: 200,
-                colorDark: "#000000", // 使用纯黑，App 识别率最高
-                colorLight: "#ffffff",
-                // 关键点 1：降低容错率。URL 较长时，L 级生成的点阵更稀疏，App 极易识别
-                correctLevel: QRCode.CorrectLevel.L,
-                // 关键点 2：有些库支持 useSVG，如果你的库支持，SVG 通常比 Canvas 更清晰
-                useSVG: true 
+            new QRCode(container, { 
+                text: url, 
+                width: 180, 
+                height: 180, 
+                colorDark : "#000000", // 建议用纯黑，兼容性最好
+                colorLight : "#ffffff", 
+                correctLevel : QRCode.CorrectLevel.M // 使用 M 级别，兼顾长度和清晰度
             });
 
-            // 关键点 3：强制给容器加一个白色内边距（Quiet Zone）
-            // 很多 App 识别失败是因为二维码边缘紧贴着边框，没有预留白色“留白”
-            container.style.padding = "15px";
-            container.style.backgroundColor = "white";
-            container.style.display = "inline-block";
-            container.style.borderRadius = "8px";
-
             document.getElementById('qrModal').classList.add('open');
+        }
+
+        function closeQRModal() { 
+            document.getElementById('qrModal').classList.remove('open'); 
         }
     </script>
 
@@ -1482,7 +1478,7 @@ function renderAdminPage(env, request) {
                 </div>
 
                 <div class="relative inline-block p-6 bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-[inner_0_4px_12px_rgba(0,0,0,0.05)] border border-slate-100/50 dark:border-slate-700/50 mb-6 group-hover:scale-[1.02] transition-transform duration-500">
-                    <div id="qrcode" class="flex justify-center transition-all"></div>
+                    <div id="qrcode" class="flex justify-center transition-all bg-white p-4"></div>
                     <div class="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-indigo-500/30 rounded-tl-[1.2rem]"></div>
                     <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-indigo-500/30 rounded-br-[1.2rem]"></div>
                 </div>
