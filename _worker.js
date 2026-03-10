@@ -1403,38 +1403,31 @@ function renderAdminPage(env, request) {
         
         function showQRCode(url) {
             const container = document.getElementById('qrcode');
-            if (!container) return;
-
-            // 1. 清空旧内容
             container.innerHTML = "";
+            
+            if (!url) return;
 
-            // 2. 检查是否有有效 URL
-            if (!url) {
-                alert("二维码链接无效");
-                return;
-            }
+            // 调整配置以增强 App 兼容性
+            new QRCode(container, {
+                text: url,
+                width: 200,        // 稍微加大一点
+                height: 200,
+                colorDark: "#000000", // 使用纯黑，App 识别率最高
+                colorLight: "#ffffff",
+                // 关键点 1：降低容错率。URL 较长时，L 级生成的点阵更稀疏，App 极易识别
+                correctLevel: QRCode.CorrectLevel.L,
+                // 关键点 2：有些库支持 useSVG，如果你的库支持，SVG 通常比 Canvas 更清晰
+                useSVG: true 
+            });
 
-            try {
-                // 3. 生成二维码
-                new QRCode(container, {
-                    text: url,
-                    width: 180,
-                    height: 180,
-                    colorDark: "#1e293b",
-                    colorLight: "#ffffff",
-                    // 建议改为 L，这样在长链接下二维码会更清晰，更容易扫码
-                    correctLevel: QRCode.CorrectLevel.L 
-                });
+            // 关键点 3：强制给容器加一个白色内边距（Quiet Zone）
+            // 很多 App 识别失败是因为二维码边缘紧贴着边框，没有预留白色“留白”
+            container.style.padding = "15px";
+            container.style.backgroundColor = "white";
+            container.style.display = "inline-block";
+            container.style.borderRadius = "8px";
 
-                // 4. 显示弹窗
-                document.getElementById('qrModal').classList.add('open');
-            } catch (e) {
-                console.error("二维码生成失败:", e);
-            }
-        }
-
-        function closeQRModal() { 
-            document.getElementById('qrModal').classList.remove('open'); 
+            document.getElementById('qrModal').classList.add('open');
         }
     </script>
 
