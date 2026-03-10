@@ -1403,23 +1403,28 @@ function renderAdminPage(env, request) {
         
         function showQRCode(url) {
             const container = document.getElementById('qrcode');
-            container.innerHTML = "";
+            const modal = document.getElementById('qrModal');
             
-            // 设置背景为白色并添加内边距，确保 App 能识别边框
-            container.style.padding = "16px"; 
-            container.style.background = "#ffffff";
-            container.style.borderRadius = "12px"; // 可选，让边框圆润一点
-
-            new QRCode(container, { 
-                text: url, 
-                width: 180, 
-                height: 180, 
-                colorDark : "#000000", // 建议用纯黑，兼容性最好
-                colorLight : "#ffffff", 
-                correctLevel : QRCode.CorrectLevel.M // 使用 M 级别，兼顾长度和清晰度
-            });
-
-            document.getElementById('qrModal').classList.add('open');
+            // 1. 先打开弹窗（重要：确保容器可见后插件才能正确绘图）
+            modal.classList.add('open');
+            
+            // 2. 清空旧内容并重置样式
+            container.innerHTML = "";
+            container.style.display = "block"; 
+            container.style.background = "#ffffff"; // 强制背景为白
+            container.style.padding = "10px";      // 留出边框防止 App 无法识别
+            
+            // 3. 延迟一小下生成，确保 DOM 已完全渲染
+            setTimeout(() => {
+                new QRCode(container, {
+                    text: url,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#000000",  // 强制二维码为纯黑
+                    colorLight: "#ffffff", // 强制背景为纯白
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }, 50);
         }
 
         function closeQRModal() { 
@@ -1477,8 +1482,9 @@ function renderAdminPage(env, request) {
                     </button>
                 </div>
 
-                <div class="relative inline-block p-6 bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-[inner_0_4px_12px_rgba(0,0,0,0.05)] border border-slate-100/50 dark:border-slate-700/50 mb-6 group-hover:scale-[1.02] transition-transform duration-500">
-                    <div id="qrcode" class="flex justify-center transition-all bg-white p-4"></div>
+                <div class="relative inline-block p-4 bg-white rounded-2xl shadow-sm mb-6">
+                    <div id="qrcode" style="width: 180px; height: 180px; margin: 0 auto;"></div>
+                </div>
                     <div class="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-indigo-500/30 rounded-tl-[1.2rem]"></div>
                     <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-indigo-500/30 rounded-br-[1.2rem]"></div>
                 </div>
